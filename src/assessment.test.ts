@@ -1,0 +1,10 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createExam, matchesSign, normalise, shuffle, signQuestion } from './assessment';
+import { signs, hazards, grammar } from './data';
+test('all requested learning content is present and uniquely identified',()=>{assert.equal(signs.length,36);assert.equal(new Set(signs.map(s=>s.id)).size,36);assert.equal(hazards.length,10);assert.equal(new Set(grammar.map(g=>g.type)).size,6);});
+test('sign names accept aliases and punctuation, but reject opposite instructions',()=>{const s=signs.find(s=>s.id==='smoking')!;assert.ok(matchesSign('Do not smoke!',s));assert.ok(matchesSign('NO SMOKING',s));assert.ok(matchesSign('Don’t smoke.',s));assert.equal(matchesSign('You should smoke',s),false);assert.equal(matchesSign('',s),false);assert.ok(matchesSign('Safety goggles',signs.find(s=>s.id==='glasses')!));});
+test('normalisation accepts full and contracted negatives',()=>{assert.equal(normalise('You should not touch it.'),normalise('You shouldn’t touch it!'));});
+test('random exams always contain 20 unique questions with the required balance',()=>{for(let n=0;n<100;n++){const questions=createExam();assert.equal(questions.length,20);assert.equal(new Set(questions.map(q=>q.id)).size,20);assert.equal(questions.filter(q=>q.kind==='grammar').length,6);assert.equal(questions.filter(q=>q.kind==='hazard').length,6);assert.equal(questions.filter(q=>q.signId).length,8);questions.forEach(q=>{assert.ok(q.options.includes(q.answer));assert.equal(new Set(q.options).size,q.options.length);});}});
+test('sign quiz avoids visually identical symbols as name distractors',()=>{signs.forEach(s=>{const q=signQuestion(s);assert.equal(q.options.length,4);assert.equal(new Set(q.options).size,4);assert.equal(q.options.filter(o=>o===s.name).length,1);});});
+test('shuffle preserves its input and all values',()=>{const list=[1,2,3,4];assert.deepEqual(shuffle(list).sort(),list);assert.deepEqual(list,[1,2,3,4]);});
